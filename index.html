@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>VNL-KERABATTOGE LIVE </title>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html,body{
+    width:100%;
+    height:100%;
+    background:#000;
+    overflow:hidden;
+}
+
+#player-container{
+    width:100%;
+    height:100%;
+    position:relative;
+}
+
+#video{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    background:#000;
+}
+
+#loading{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    color:#fff;
+    font-family:Arial,sans-serif;
+    font-size:20px;
+    z-index:100;
+}
+
+#error{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    color:red;
+    font-family:Arial,sans-serif;
+    display:none;
+    z-index:100;
+}
+</style>
+</head>
+<body>
+
+<div id="player-container">
+
+    <div id="loading">Loading Live Stream...</div>
+
+    <div id="error">
+        Stream tidak dapat diputar
+    </div>
+
+    <video
+        id="video"
+        controls
+        autoplay
+        muted
+        playsinline>
+    </video>
+
+</div>
+
+<script>
+
+const STREAM_URL =
+"https://livecdn.euw1-0005.jwplive.com/live/sites/fM9jRrkn/media/rDLqpy3B/live.isml/.m3u8";
+
+const video = document.getElementById("video");
+const loading = document.getElementById("loading");
+const errorBox = document.getElementById("error");
+
+function hideLoading(){
+    loading.style.display = "none";
+}
+
+function showError(){
+    hideLoading();
+    errorBox.style.display = "block";
+}
+
+if(Hls.isSupported()){
+
+    const hls = new Hls({
+        enableWorker:true,
+        lowLatencyMode:true
+    });
+
+    hls.loadSource(STREAM_URL);
+    hls.attachMedia(video);
+
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+
+        hideLoading();
+
+        video.play().catch(() => {
+            console.log("Autoplay diblokir browser");
+        });
+
+    });
+
+    hls.on(Hls.Events.ERROR, (event,data) => {
+
+        console.log(data);
+
+        if(data.fatal){
+
+            switch(data.type){
+
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                    hls.startLoad();
+                    break;
+
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                    hls.recoverMediaError();
+                    break;
+
+                default:
+                    showError();
+                    hls.destroy();
+                    break;
+            }
+        }
+    });
+
+}else if(video.canPlayType("application/vnd.apple.mpegurl")){
+
+    video.src = STREAM_URL;
+
+    video.addEventListener("loadedmetadata", () => {
+
+        hideLoading();
+
+        video.play().catch(() => {});
+
+    });
+
+}else{
+
+    showError();
+
+}
+
+</script>
+
+</body>
+</html>
